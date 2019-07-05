@@ -60,7 +60,7 @@ def apply_list(func, file_list=get_tif_list()):
         pass
         
 
-apply_tif_list(func = subtract_back)
+apply_list(func = subtract_back)
     
 
 
