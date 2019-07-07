@@ -109,7 +109,6 @@ def measure_rm(img_path, roi_path):
         roi_name = roi.getName()
         ip.setRoi(roi)
         stat = ImageStatistics.getStatistics(ip, moptions, cal)
-        # Measurementの値を指定するにはmoptionでMeasuremnt Classのbit論理和を取る
         
     
         IJ.log(
