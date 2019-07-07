@@ -5,6 +5,9 @@ from ij.plugin.filter import BackgroundSubtracter
 import os
 import glob
 import re
+from org.python.core import codecs
+
+codecs.setDefaultEncoding('utf_8')
 
 
 def get_file_info(f):
