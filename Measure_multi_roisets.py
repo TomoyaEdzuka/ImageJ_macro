@@ -57,7 +57,7 @@ def get_img_names(tif_list):
     img_l = []
     for img_path in tif_list:
         img_file = os.path.basename(img_path)
-        img_name = img_file.replace("-subtracted.tif", "")
+        img_name = re.sub(r"-subtracted.tif|.tif", "", img_file)
         img_l.append(img_name)
     return img_l
 
