@@ -1,0 +1,240 @@
+---
+title: "Chromosome movement quantification"
+output: html_document
+---
+
+
+
+```{r}
+library(tidyverse)
+
+path <- "/Users/Edzuka/Desktop/Choromosome_movement_test/C2-190620_GH_100p10s_002_macro.xlsx"
+
+df <- readxl::read_xlsx(path)
+
+df <- 
+  df %>% filter(frame_position <= 35)
+
+
+# lag_lead <- function(something){
+#   tibble(lag_something = lag(something), 
+#          lead_something = lead(something),
+#          lag_delta = something-lag(something),
+#          lead_delta = something - lead(something)) %>% 
+#     select(-lag_something, -lead_something)
+# }
+
+## df %>% 
+##   bind_cols(., lag_lead(.$area)) %>% 
+##   group_by(frame_position) %>%
+##   nest() %>% 
+##   mutate(nobjects = map_dbl(.$data, ~unnest(..1) %>% nrow()))
+##   
+## 
+df <- 
+   df %>% 
+   mutate(lag_area = lag(area),
+          lead_area = lead(area), 
+          lag_delta = area-lag_area,
+          lead_delta = lead_area-area) %>% 
+   select(Roi_id, frame_position, lag_delta, lead_delta, area, everything())
+
+df <- 
+  df %>% 
+  group_by(frame_position) %>% 
+  nest() %>% 
+  mutate(n_objects = map_dbl(.$data, ~unnest(..1) %>% nrow())) %>% 
+  unnest() %>% 
+  mutate(to_separate1 = if_else(n_objects == 1, T, F)
+         ) %>% 
+  mutate(phase =
+           case_when(
+             lag_delta < 0 & lead_delta > 0 ~ "loc_min",
+             lag_delta > 0 & lead_delta < 0 ~ "loc_max",
+             lag_delta <= 0 & lead_delta <= 0 ~ "decrease",
+             lag_delta >= 0 & lead_delta >= 0 ~ "increase",
+             TRUE ~ "continue"
+           ))
+
+df
+```
+
+
+```{r}
+x <- c("continue", "decrease","decrease", "decrease", "local_min", 
+       "increase", "increase", "increase", "increase", "local_max", "decrease")
+
+detect_phase <- function(x, target, next_target, n_or_more){
+  rle(x) %>% 
+  unclass() %>% 
+  as_tibble() %>% 
+  mutate(next_lengths = lead(lengths),
+         next_values = lead(values),
+         index = cumsum(lengths)
+         ) %>% 
+  filter(.$values == target & 
+         .$next_values == next_target & 
+         .$next_lengths >= n_or_more) %>% 
+    select(index, values, 
+           next_lengths, 
+           next_values, -lengths)
+}
+
+det <- detect_phase(x, target = "local_min", 
+                   next_target = "increase", 
+                   n_or_more = 3)
+det %>% pluck("index")
+
+make_phase <- function(data, detector, phase1 = "metaphase", phase2 = "anaphase"){
+  n <- detector %>% pluck("index") %>% pluck(1)
+  len <- data %>% length
+  rep(phase1, n) %>% c(rep(phase2, len-n))
+}
+```
+
+
+```{r}
+f <- function(x){
+  x %>% 
+  {
+  det <- detect_phase(., target = "loc_min", next_target = "increase", n_or_more = 3)
+  make_phase(., det)
+  }
+}
+detect_phase(df$pahse, target = "loc_min", next_target = "increase", n_or_more = 3)
+```
+
+
+```{r}
+df <- 
+  df %>% 
+  mutate(mitotic_phase = f(.$phase)) %>% 
+  select(-starts_with("lag"), -starts_with("lead"), -phase, -to_separate1)
+```
+
+```{r}
+df
+```
+
+
+```{r}
+s <- "[181, 182, 183, 184, 185, 186, 187, 188]"
+
+pylist_to_ratomic <- function(s){
+  s %>% 
+    str_replace(pattern = "\\[", "") %>% 
+    str_replace(pattern = "\\]", "")  %>%
+    str_replace(pattern = "\\s", "") %>% 
+    str_split(",") %>%
+    simplify() %>% 
+    as.numeric()
+}
+trans_to_numeric(s)
+
+```
+
+```{r}
+df <- 
+  df %>% 
+  mutate(x = map(xpoint, trans_to_numeric), 
+         y = map(ypoint, trans_to_numeric)) %>% 
+  select(-xpoint, -ypoint) %>% 
+  unnest()
+
+# Centroid height
+h <- 
+  df %>% 
+  group_by(Roi_id) %>% 
+  filter(x == as.integer(xcentroid)) %>% 
+  summarise(height = max(y)-min(y))
+
+# Length (width) in centroid
+w <- df %>% 
+       group_by(Roi_id) %>% 
+       filter(y == as.integer(ycentroid)) %>% 
+       summarise(width = max(x)-min(x))
+
+df <- 
+  df %>% 
+  group_by(Roi_id, xcentroid, ycentroid, n_objects, frame_position, mitotic_phase) %>% 
+  nest() %>% 
+  left_join(w) %>% 
+  ungroup() %>% 
+  group_by(frame_position) %>% 
+  mutate(xr = xcentroid + width/4,
+         xl = xcentroid - width/4) %>% 
+  select(xl, xr, xcentroid, ycentroid, frame_position, n_objects, mitotic_phase) %>% 
+  gather(key = "attr", value = "x", -ycentroid, -frame_position, -n_objects, -mitotic_phase) %>%
+  filter(
+    (mitotic_phase == "metaphase" & attr == "xcentroid")|
+    (mitotic_phase == "anaphase" & attr == "xl"& n_objects == 1)|
+    (mitotic_phase == "anaphase" & attr == "xr"& n_objects == 1)|
+    (mitotic_phase == "anaphase" & attr == "xcentroid" & n_objects == 2)
+  ) %>% 
+  arrange(frame_position, x) %>% 
+  mutate(max_x = max(x), 
+         attr = 
+           case_when(
+             mitotic_phase == "anaphase" & attr == "xcentroid" & x == max_x ~ "xr",
+             mitotic_phase == "anaphase" & attr == "xcentroid" & x != max_x ~ "xl",
+             TRUE ~ attr
+           )
+           ) %>%
+  select(-max_x)
+
+df_ana <- 
+  df %>% 
+  filter(mitotic_phase == "anaphase") %>% 
+  mutate(x_left = x,
+         x_right = lead(x),
+         y_left = ycentroid,
+         y_right = lead(ycentroid)) %>% 
+  drop_na() %>%
+  select(-ycentroid, -x, -attr) %>% 
+  mutate(
+    distance = sqrt(
+    (x_left - x_right)**2 + (y_left - y_right)**2
+    )
+    )
+
+df_meta <- 
+  df %>% 
+  filter(mitotic_phase == "metaphase")
+
+df_ana %>% 
+  ggplot() + 
+  geom_line(aes(x_left, y_left), color = "red") + 
+  geom_line(aes(x_right, y_right), color = "blue")+
+  geom_point(aes(x_left, y_left,color = frame_position)) + 
+  geom_point(aes(x_right, y_right,color = frame_position))+
+  # geom_point(data = df_meta, aes(x, ycentroid,color = frame_position))+
+  labs(x = "x", y = "y") + 
+  ylim(c(100, 180))
+  
+
+
+  
+ # ggplot(aes(x, ycentroid)) + 
+  # geom_point(aes(color = attr))
+  #  gather(key = "pos", value = "x", -ycentroid, -frame_position, -n_objects) %>% 
+  #  group_by(pos, frame_position,n_objects) %>% 
+  #  mutate(
+  #    x = case_when(pos == "x_left" ~ min(x), 
+  #                  pos == "x_right" ~ max(x))
+  #  ) %>% 
+  #  distinct(x, ycentroid)
+```
+
+
+```{r}
+df_ana %>% 
+  ggplot(aes(frame_position, distance))  + 
+  geom_point()
+  # + geom_smooth(se = F)
+  
+```
+
+
+
+
+
