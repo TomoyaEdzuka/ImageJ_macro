@@ -3,7 +3,7 @@ from ij.plugin.frame import RoiManager
 import os
 
 
-# Binalize
+# Binarize
 imp = IJ.getImage()
 imp1 = imp.duplicate()
 IJ.run(imp1, "Subtract Background...", "rolling=15 stack")
