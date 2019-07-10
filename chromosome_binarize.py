@@ -67,8 +67,20 @@ def getArea(roi_array = RoiManager.getInstance().getRoisAsArray()):
 
 area = getArea()
 
+
+def get_file_info(imp):
+    img_dir = imp.getOriginalFileInfo().directory
+    img_file = imp.getOriginalFileInfo().fileName
+    if img_dir and img_file is not None:
+        name, ext = os.path.splitext(img_file)
+        return img_dir, name
+
+img_dir, file_name = get_file_info(imp)
+
 IJ.log("\\Clear")
 IJ.log(
+"directory"+ "\t" + 
+"file_name"+ "\t" + 
 "Roi_id" + "\t" + 
 "frame_position" + "\t" +
 "area" + "\t" +
@@ -79,9 +91,11 @@ IJ.log(
 )
 
 
-def write_log(roi_name, frame_position, area,  xcentroid, ycentroid, xpoint, ypoint):
+def write_log(img_dir, file_name, roi_name, frame_position, area,  xcentroid, ycentroid, xpoint, ypoint):
     for i in range(len(roi_array)):
         IJ.log(
+        img_dir + "\t" +
+        file_name + "\t" +
         roi_name[i] + "\t" + 
         str(frame_position[i]) + "\t" +
         str(area[i]) + "\t" +
@@ -91,7 +105,7 @@ def write_log(roi_name, frame_position, area,  xcentroid, ycentroid, xpoint, ypo
         str(ypoint[i])
         ) 
 
-write_log(roi_name, frame_position, area, xcentroid, ycentroid, xpoint, ypoint)
+write_log(img_dir, file_name, roi_name, frame_position, area, xcentroid, ycentroid, xpoint, ypoint)
 
 
 
