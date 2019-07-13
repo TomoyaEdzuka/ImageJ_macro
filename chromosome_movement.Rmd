@@ -142,6 +142,16 @@ df <-
   select(-xpoint, -ypoint) %>% 
   unnest()
 
+df %>% 
+  ggplot(aes(x, y, color = Roi_id)) + 
+  geom_point() + 
+  guides(colour=FALSE) + 
+  facet_grid(frame_position ~ .) + 
+  geom_point(aes(xcentroid, ycentroid), color = "white", size = 2)
+```
+
+
+```{r}
 # Centroid height
 h <- 
   df %>% 
