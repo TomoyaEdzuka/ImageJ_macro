@@ -101,7 +101,8 @@ f <- function(x){
   make_phase(., det)
   }
 }
-detect_phase(df$pahse, target = "loc_min", next_target = "increase", n_or_more = 3)
+
+detect_phase(df$phase, target = "loc_min", next_target = "increase", n_or_more = 3)
 ```
 
 
@@ -129,15 +130,15 @@ pylist_to_ratomic <- function(s){
     simplify() %>% 
     as.numeric()
 }
-trans_to_numeric(s)
+
 
 ```
 
 ```{r}
 df <- 
   df %>% 
-  mutate(x = map(xpoint, trans_to_numeric), 
-         y = map(ypoint, trans_to_numeric)) %>% 
+  mutate(x = map(xpoint, pylist_to_ratomic), 
+         y = map(ypoint, pylist_to_ratomic)) %>% 
   select(-xpoint, -ypoint) %>% 
   unnest()
 
