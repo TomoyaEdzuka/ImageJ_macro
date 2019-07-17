@@ -4,6 +4,7 @@ from ij.io import DirectoryChooser as dc
 from loci.plugins. in import ImagePlusReader, ImporterOptions, ImportProcess
 from org.python.core import codecs
 from ij import IJ
+from ij.gui import GenericDialog
 
 codecs.setDefaultEncoding('utf-8')
 
@@ -57,7 +58,23 @@ def trans_to_tif(file_list):
                         IJ.saveAsTiff(imp, save_path)
                         imp.close()
                     else:
-                        pass
+
+                        def get_input_string():
+
+                            gd = GenericDialog("Caution")
+                            gd.addMessage("Tiff files already exist. Do you want to overwrite the files ? ")
+                            gd.showDialog()
+                            return gd
+
+                        listen = get_input_string()
+
+                        if listen.wasOKed():
+                            IJ.saveAsTiff(imp, save_path)
+                            imp.close()
+
+                        else:
+                            pass
+
 
 
 fs = get_file_list()
