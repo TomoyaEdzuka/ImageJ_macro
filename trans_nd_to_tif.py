@@ -1,6 +1,5 @@
 import glob
 import os
-import re
 from ij.io import DirectoryChooser as dc
 from loci.plugins.in import ImagePlusReader,ImporterOptions,ImportProcess
 from org.python.core import codecs
