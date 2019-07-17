@@ -19,7 +19,7 @@ def get_file_list():
         pass
 
 
-def trans_to_tif(file_list):
+def trans_to_tif(file_list, overwrite = False):
     if file_list is not None:
         for path in file_list:
             opts = ImporterOptions()
@@ -29,7 +29,7 @@ def trans_to_tif(file_list):
             opts.setOpenAllSeries(True)
 
             process = ImportProcess(opts)
-            
+
             try:
                 process.execute()
             except:
@@ -42,44 +42,44 @@ def trans_to_tif(file_list):
             except:
                 IJ.log(path + "\n" + "This file was not properly processed")
                 pass
-            
+
             else:
                 dir_name = os.path.dirname(path)
                 file_name = os.path.basename(os.path.splitext(path)[0])
                 save_dir = os.path.join(dir_name, file_name)
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
-                
+
                 imps = ImagePlusReader(process).openImagePlus()
                 for i, imp in enumerate(imps):
                     save_path = os.path.join(save_dir, file_name + "_pos{}.tif".format(i + 1))
-    
+
                     if not os.path.exists(save_path):
                         IJ.saveAsTiff(imp, save_path)
-                        imp.close()
+                        IJ.freeMemory()
                     else:
-
-                        def get_input_string():
-
-                            gd = GenericDialog("Caution")
-                            gd.addMessage("Tiff files already exist. Do you want to overwrite the files ? ")
-                            gd.showDialog()
-                            return gd
-
-                        listen = get_input_string()
-
-                        if listen.wasOKed():
+                        if overwrite:
                             IJ.saveAsTiff(imp, save_path)
-                            imp.close()
-
+                            IJ.freeMemory()
                         else:
                             pass
 
 
+
+def get_ok():
+
+    gd = GenericDialog("Caution")
+    gd.addMessage("Do you want to overwrite the files ? ")
+    gd.showDialog()
+    return gd.wasOKed()
 
 fs = get_file_list()
 
 nd_files = [f for f in fs
             if f.endswith("nd") or f.endswith("nd2")]
 
-trans_to_tif(nd_files)
+
+trans_to_tif(nd_files, overwrite=False)
+
+# If you want to overwrite, overwrite=True or
+# overwrite=getOK() to open a dialog.
