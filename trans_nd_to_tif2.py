@@ -75,9 +75,11 @@ def get_ok():
 
 fs = get_file_list()
 
-nd_files = [f for f in fs
-            if f.endswith("nd") or f.endswith("nd2")]
-
+if fs is not None:
+    nd_files = [f for f in fs
+                if f.endswith("nd") or f.endswith("nd2")]
+else:
+    nd_files = None
 
 trans_to_tif(nd_files, overwrite=False)
 
