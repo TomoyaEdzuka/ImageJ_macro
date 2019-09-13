@@ -111,12 +111,12 @@ class filament(RoiManager):
         
         poly_index = branch_index    
         if poly_npoints/2 >= poly_index:
-            print 'if', i+1
+            # print 'if', i+1
             newx = poly.xpoints[poly_index:]
             newy = poly.ypoints[poly_index:]
             new_poly = FloatPolygon(newx, newy)
         else:
-            print 'else', i+1
+            # print 'else', i+1
             newx = reversed(poly.xpoints[:poly_index + 1])
             newy = reversed(poly.ypoints[:poly_index + 1])
             new_poly = FloatPolygon(newx, newy)
