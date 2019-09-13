@@ -38,11 +38,6 @@ class filament(RoiManager):
         self.roi_array = self.RoiManager.getRoisAsArray()
         for roi in self.roi_array:
             roi.fitSpline()
-        
-        if len(self.roi_array):
-            self.stem = self.roi_array[0]
-        if len(self.roi_array) >= 1:
-            self.branches = self.roi_array[1:]
 
     def get_xy(self, i):
         roi = self.roi_array[i]
