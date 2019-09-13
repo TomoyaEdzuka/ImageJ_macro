@@ -21,6 +21,14 @@ def get_distance(x1, y1, x2, y2):
     l = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
     return l
 
+def get_roi_length(roi):
+    floatpolygon = roi.getFloatPolygon()
+    length = 0
+    xp = floatpolygon.xpoints
+    yp = floatpolygon.ypoints
+    for xs, ys, xe, ye in zip(xp[1:], yp[1:], xp[:len(xp)-1], yp[:len(yp)-1]):
+        length += get_distance(xs, ys, xe, ye)
+    return length
 
 class filament(RoiManager):
 
@@ -28,12 +36,8 @@ class filament(RoiManager):
         super(filament, self).__init__()
         self.RoiManager = self.getInstance()
         self.roi_array = self.RoiManager.getRoisAsArray()
-
-        for i, roi in enumerate(self.roi_array):
-            roi.fitSpline()            
-            self.prune_branch(i)
-            
-
+        for roi in self.roi_array:
+            roi.fitSpline()
         
         if len(self.roi_array):
             self.stem = self.roi_array[0]
@@ -51,12 +55,12 @@ class filament(RoiManager):
         return x, y
 
     def get_length(self, i):
-        # xp, yp = self.get_xy(i)
-        # distance = 0
-        # for xs, ys, xe, ye in zip(xp[1:], yp[1:], xp[:len(xp)-1], yp[:len(yp)-1]):
-            # distance += get_distance(xs, ys, xe, ye)
-        # return distance
-        return self.roi_array[i].getFloatPolygon().getLength(True)
+        xp, yp = self.get_xy(i)
+        length = 0
+        for xs, ys, xe, ye in zip(xp[1:], yp[1:], xp[:len(xp)-1], yp[:len(yp)-1]):
+            length += get_distance(xs, ys, xe, ye)
+        return length
+        # return self.roi_array[i].getFloatPolygon().getLength(True)
     
     def get_straight_length(self, i):
         xs, ys = self.get_xy(i)
@@ -67,17 +71,19 @@ class filament(RoiManager):
         sx = stem_poly.xpoints
         sy = stem_poly.ypoints
 
+        if i == 0:
+            temp_min, stem_index, branch_index = 0, 0, 0
+            stemx = sx[0]
+            stemy = sy[0]
+            branchx = stemx
+            branchy = stemy
+            return temp_min, stemx, stemy, stem_index, branchx, branchy, branch_index
+
         branch_poly = self.roi_array[i].getFloatPolygon()
         bx = branch_poly.xpoints
         by = branch_poly.ypoints
+
     
-        temp_min = None
-        branchx = None
-        branchy = None
-        stemx = None
-        stemy = None
-        stem_index = None
-        branch_index = None
 
         for index in range(len(sx)):
             for j in range(len(bx)):
@@ -85,6 +91,7 @@ class filament(RoiManager):
                     temp_min = get_distance(bx[j], by[j], sx[index], sy[index])
                     continue
                 if temp_min >= get_distance(bx[j], by[j], sx[index], sy[index]):
+                    # print "temp_min = ", temp_min, "index, j =", index, j
                     temp_min = get_distance(bx[j], by[j], sx[index], sy[index])
                     stem_index = index
                     branch_index = j
@@ -102,18 +109,19 @@ class filament(RoiManager):
 
         if i == 0:
             return
+        
         temp_min, stemx, stemy, stem_index, branchx, branchy, branch_index = self.get_coord_min_distance(i)        
         poly = self.roi_array[i].getFloatPolygon()
         poly_npoints = poly.npoints
         
         poly_index = branch_index    
         if poly_npoints/2 >= poly_index:
-            # print 'if', i+1
+            print 'if', i+1
             newx = poly.xpoints[poly_index:]
             newy = poly.ypoints[poly_index:]
             new_poly = FloatPolygon(newx, newy)
         else:
-            # print 'else', i+1
+            print 'else', i+1
             newx = reversed(poly.xpoints[:poly_index + 1])
             newy = reversed(poly.ypoints[:poly_index + 1])
             new_poly = FloatPolygon(newx, newy)
@@ -125,27 +133,35 @@ class filament(RoiManager):
         self.RoiManager.setRoi(new_roi, i)
 
     def get_distance_from_stem(self, i):
-        _1, stemx, stemy, _2, _3, _4, _5 = self.get_coord_min_distance(i)
-        stem_x_start = self.roi_array[0].getFloatPolygon().xpoints[0]
-        stem_y_start = self.roi_array[0].getFloatPolygon().ypoints[0]
-        distance = get_distance(stem_x_start, stem_y_start, stemx, stemy)
-        return distance
+
+        if i == 0:
+            return 0
+        min_len, stemx, stemy, stem_index, _1, _2, _3  = self.get_coord_min_distance(i)
+        stem_x_array = self.roi_array[0].getFloatPolygon().xpoints[:stem_index]
+        stem_y_array = self.roi_array[0].getFloatPolygon().ypoints[:stem_index]
+        new_poly = FloatPolygon(stem_x_array, stem_y_array)
+        new_roi = PolygonRoi(new_poly, Roi.POLYLINE)
+        new_roi.fitSpline()
+        
+        
+        return get_roi_length(new_roi)
         
     def get_angle(self, i):
-        _, stemx, stemy, stem_index, branchx, branchy, branch_index = self.get_coord_min_distance(i)
+        _, _, _, stem_index, _, _, _ = self.get_coord_min_distance(i)
         
-        stem_x = self.roi_array[0].getFloatPolygon().xpoints
-        stem_y = self.roi_array[0].getFloatPolygon().ypoints
+        stem_x = self.get_xy(0)[0]
+        stem_y = self.get_xy(0)[1]
+        branch_x = self.get_xy(i)[0]
+        branch_y = self.get_xy(i)[1]
+
         between_x = stem_x[stem_index]
         between_y = stem_y[stem_index]
 
         start_stem_x = stem_x[stem_index - 10]
         start_stem_y = stem_y[stem_index - 10]
 
-        branch_x = self.roi_array[i].getFloatPolygon().xpoints
-        branch_y = self.roi_array[i].getFloatPolygon().ypoints
-        end_branch_x = branch_x[5]
-        end_branch_y = branch_y[5]
+        end_branch_x = branch_x[10]
+        end_branch_y = branch_y[10]
 
         xpoints = [start_stem_x, between_x, end_branch_x]
         ypoints = [start_stem_y, between_y, end_branch_y]
@@ -226,8 +242,10 @@ def save_roi_set(imp = IJ.getImage()):
     rm = RoiManager().getInstance()  
     rm.deselect()
     rm.runCommand("Save",roi_path)
-    
-    ol = imp.getOverlay() 
+
+    ol = imp.getOverlay()
+    if ol is None:
+        ol = Overlay()
     for roi in rm.getRoisAsArray():
         ol.add(roi)
         imp.setOverlay(ol)
@@ -241,32 +259,21 @@ def save_roi_set(imp = IJ.getImage()):
 ### 以下データ出力
 
 fil = filament()
+for i in range(len(fil.roi_array)):
+    fil.prune_branch(i)
+fil = filament()
 
 ite = range(len(fil.roi_array))
 
-
-## このファイルを実行した時間を取得
-class JST(tzinfo):
-    def utcoffset(self, dt):
-        return timedelta(hours=9)
-
-
-    def dst(self, dt):
-        return timedelta(0)
-
-
-    def tzname(self, dt):
-        return 'JST'
-
-exec_time = datetime.now(tz=JST())
+exec_time = datetime.now()
 
 ## 出力するもの一覧
 file_info = os.path.join(*get_file_info())
 file_path = [file_info for _ in ite]
-
 exec_times = [exec_time for _ in ite]
 roi_id = [i+1 for i in ite]
 types = [set_name(i) for i in ite]
+
 curve_length = [fil.get_length(i) for i in ite]
 straight_length = [fil.get_straight_length(i) for i in ite]
 distance_from_stem_apical = [fil.get_distance_from_stem(i) for i in ite]
