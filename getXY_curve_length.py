@@ -163,6 +163,12 @@ file_name = imp.getOriginalFileInfo().fileName
 # Preapre to write csv file
 col_name = ["folder", "file",  "roi_index", "x", "y", "x_start", "y_start", "x_end", "y_end",  "curve_length",
             "straight_length"]
+col_string = ""
+for s in col_name:
+    col_string += s + "\t"
+
+IJ.log("\Clear")
+IJ.log(col_string[:-2])
 
 csv_path = os.path.join(get_file_info()[0], get_file_info()[1] + "_analyze.csv")
 
@@ -182,9 +188,11 @@ with open(csv_path, "a") as f:
         for j in range(len(xps[i])):
             writer.writerow([dir_name, file_name, roi_index[i], xps[i][j], yps[i][j], x_starts[i], y_starts[i], x_ends[i],
                             y_ends[i], curve_lengths[i], straight_lengths[i]])
+            IJ.log(str(dir_name) + "\t" + str(file_name) + "\t" + str(roi_index[i]) + "\t" + str(xps[i][j]) + "\t" + str(yps[i][j]) + "\t" + str(x_starts[i]) + "\t" + str(y_starts[i]) + "\t" + str(x_ends[i])
+                            + "\t" + str(y_ends[i]) + "\t" + str(curve_lengths[i]) + "\t" + str(straight_lengths[i]))
 
 save_roi_set(imp=IJ.getImage())
 
 # table上に表示する
-op = Opener()
-op.openTable(csv_path)
+# op = Opener()
+# op.openTable(csv_path)
