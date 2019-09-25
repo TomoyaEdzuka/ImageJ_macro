@@ -1,7 +1,7 @@
 import glob
 import os
 from ij.io import DirectoryChooser as dc
-from loci.plugins import ImagePlusReader, ImporterOptions, ImportProcess
+from loci.plugins.in import ImagePlusReader, ImporterOptions, ImportProcess
 from org.python.core import codecs
 from ij import IJ
 from ij.gui import GenericDialog
