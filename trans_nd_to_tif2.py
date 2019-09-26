@@ -56,7 +56,6 @@ def trans_to_tif(file_list, overwrite = False):
 
                     if not os.path.exists(save_path):
                         IJ.saveAsTiff(imp, save_path)
-                        IJ.freeMemory()
                     else:
                         if overwrite:
                             IJ.saveAsTiff(imp, save_path)
