@@ -63,7 +63,7 @@ def separate_imps(imps, n):
         if len(inner_list) == n:
             outer_list.append(inner_list)
             inner_list = []
-        if i + 1 == len(imps) and len(inner_list) != n:
+        if i + 1 == len(imps) and inner_list != []:
             empty_imp = create_empty_imp(imp1)
             while n - len(inner_list) > 0:            
                 inner_list.append(empty_imp)
