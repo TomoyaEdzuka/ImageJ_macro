@@ -11,8 +11,7 @@ import datetime
 import csv
 import glob
 from ij.io import Opener
-from datetime import datetime
-from datetime import timedelta, tzinfo
+from datetime import datetime, timedelta, tzinfo
 
 imp = IJ.getImage()
 
