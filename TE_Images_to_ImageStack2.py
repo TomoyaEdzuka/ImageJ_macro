@@ -28,7 +28,13 @@ def getTeNchannel(imp):
     TE画像からProperty情報を抜き出し,
     チャネルの数を取得する関数
     """
-    prop = imp.getProperties().getProperty('Info')
+    try:
+        prop = imp.getProperties().getProperty('Info')
+    
+    except:
+        IJ.log('The image files do not have a channel property')
+        raise Exception('The image files do not have channel properties')
+
     match = re.compile(r'Repeat - Channel \((.+)\)')
     channel_info = match.findall(prop)
     print("Channel contents: {}".format(channel_info))
