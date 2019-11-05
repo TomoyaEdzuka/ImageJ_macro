@@ -138,7 +138,7 @@ if not Canceled:
         # Hyper Stack の Channelカラー変更
         for i, color in enumerate(user_color):
             h_imp.setC(i + 1)
-            h_imp.setChannelLut(LUT.createLutFromColor(Colors[color]), i + 1)
+            h_imp.setLut(LUT.createLutFromColor(Colors[color]))
 
         # ファイルを保存
         IJ.saveAsTiff(h_imp, save_path)
