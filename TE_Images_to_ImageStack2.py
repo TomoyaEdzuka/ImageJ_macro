@@ -29,11 +29,8 @@ def getTeNchannel(imp):
     チャネルの数を取得する関数
     """
     prop = imp.getProperties().getProperty('Info')
-    prop_list = prop.split('\n', 50)  # 最初の50行目まで読み込み, 改行文字で分割してリスト化
-    character = [s.strip() for s in prop_list]  # 空白を削除した各行
-    channel_row = [s for s in character if 'Repeat - Channel' in s]
     match = re.compile(r'Repeat - Channel \((.+)\)')
-    channel_info = [match.findall(string) for string  in channel_row]
+    channel_info = match.findall(prop)
     print("Channel contents: {}".format(channel_info))
 
     if channel_info:
