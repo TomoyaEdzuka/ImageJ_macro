@@ -37,7 +37,7 @@ def getTeNchannel(imp):
     print("Channel contents: {}".format(channel_info))
 
     if channel_info:
-        comma = channel_row[0].count(",")  # ","の出現回数からチャネルの数を計算する
+        comma = channel_info[0].count(",")  # ","の出現回数からチャネルの数を計算する
         nChannel = comma + 1
         return nChannel
     else:
